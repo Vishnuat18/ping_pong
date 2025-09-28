@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Flame Pong</title>
+    <title>RPSIT Rally</title>
     <style>
         /* Basic Setup */
         :root {
-            --yellow-gradient: linear-gradient(180deg, #ffee58, #ffc107);
+            --yellow-bg: #FACC15; /* Gold/Yellow */
+            --dark-yellow-accent: #A16207; /* Button/border color */
             --purple-gradient: linear-gradient(180deg, #7b1fa2, #4a148c);
         }
 
@@ -33,7 +34,7 @@
             overflow: hidden;
             border-radius: 40px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            background: var(--yellow-gradient);
+            background: var(--yellow-bg);
         }
 
         .screen {
@@ -56,11 +57,10 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            gap: 20px;
         }
-
+        
         #game-screen, #leaderboard-screen {
-            background: var(--yellow-gradient);
+            background: var(--yellow-bg);
         }
 
         #game-over-screen {
@@ -69,6 +69,9 @@
 
         /* UI Elements */
         .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -77,18 +80,29 @@
             box-sizing: border-box;
             z-index: 10;
         }
+        
+        .top-right-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
 
         .icon-button {
             background: none;
             border: none;
-            color: white;
-            font-size: 24px;
-            font-weight: 300;
+            color: var(--dark-yellow-accent);
+            text-shadow: none;
+            font-size: 28px;
+            font-weight: bold;
             cursor: pointer;
             width: 40px;
             height: 40px;
             display: grid;
             place-items: center;
+        }
+        
+        #game-screen .icon-button, #game-over-screen .icon-button, #leaderboard-screen .icon-button {
+             color: white;
         }
 
         #player-name-input {
@@ -96,23 +110,29 @@
             padding: 15px;
             font-size: 18px;
             border-radius: 12px;
-            border: 2px solid rgba(0,0,0,0.1);
+            border: 2px solid var(--dark-yellow-accent);
             text-align: center;
-            background: rgba(255, 255, 255, 0.8);
+            background: #FEFCE8;
             color: #333;
             outline: none;
         }
-        #player-name-input:focus {
-            border-color: #000;
+        #player-name-input::placeholder {
+            color: #9ca3af;
         }
 
         .score-box {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 6px 12px;
             border-radius: 12px;
             font-size: clamp(16px, 4vw, 18px);
             font-weight: bold;
             font-family: 'Courier New', Courier, monospace;
+            color: var(--dark-yellow-accent);
+        }
+        
+        #game-screen .score-box, #game-over-screen .score-box {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
         }
 
         .score-text {
@@ -128,32 +148,22 @@
         
         #home-content-wrapper {
             text-align: center; 
-            flex-grow: 1; 
+            width: 100%;
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
             gap: 20px;
         }
-        
-        #change-name-btn {
-            background: none;
-            border: none;
-            color: rgba(0,0,0,0.4);
-            font-size: 14px;
-            cursor: pointer;
-            text-decoration: underline;
-            margin-top: 10px;
-        }
 
-        #flame { /* This now targets the img element */
+        #flame {
             position: absolute;
-            width: clamp(40px, 10vw, 50px); /* Adjust size for the image */
-            height: auto; /* Maintain aspect ratio */
-            filter: drop-shadow(0 0 10px #fffffeb3); /* Use drop-shadow for image */
+            width: clamp(40px, 10vw, 50px);
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 69, 0, 0.7));
             will-change: transform;
             z-index: 6;
-            transform-origin: center center; /* Ensure rotation is from center */
+            transform-origin: center center;
         }
 
         #paddle {
@@ -203,9 +213,9 @@
             z-index: -1;
         }
 
-        .deco-flame { /* This now targets the img elements for the rain */
+        .deco-flame {
             position: absolute;
-            width: clamp(20px, 6vw, 30px); /* Smaller size for raining logos */
+            width: clamp(20px, 6vw, 30px);
             height: auto;
             filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.5));
             animation: flameRain 3s linear infinite;
@@ -237,9 +247,17 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        
+        #home-screen .primary-btn {
+            background-color: var(--dark-yellow-accent);
+            width: 80%;
+        }
+
+        #game-over-screen .primary-btn {
+            background-color: #000;
+        }
 
         .primary-btn {
-            background-color: #000;
             color: #fff;
             display: flex;
             justify-content: center;
@@ -253,7 +271,6 @@
             margin-top: 15px;
         }
         
-        /* Leaderboard Screen */
         #leaderboard-content {
             flex-grow: 1;
             width: 100%;
@@ -291,18 +308,12 @@
         }
         
         h1 {
-            color: rgba(0,0,0,0.6);
+            color: var(--dark-yellow-accent);
             font-size: clamp(36px, 12vw, 48px);
             margin: 0;
-        }
-        #welcome-name {
-            display: block;
-            font-size: clamp(24px, 8vw, 32px);
-            margin-top: 10px;
-            color: #000;
+            font-weight: 900;
         }
 
-        /* Full screen on smaller devices */
         @media (max-height: 932px) {
             #game-container {
                 border-radius: 0;
@@ -315,37 +326,48 @@
 
         <div id="home-screen" class="screen">
             <div class="top-bar">
-                <div class="score-box" id="home-hi-score-display">HI 000</div>
-                <button id="leaderboard-btn" class="icon-button">🏆</button>
+                <button id="home-back-btn" class="icon-button">←</button>
+                <div class="top-right-group">
+                    <button id="leaderboard-btn" class="icon-button">🏆</button>
+                    <div class="score-box" id="home-hi-score-display">HI 000</div>
+                </div>
             </div>
             <div id="home-content-wrapper">
-                </div>
+                 <h1>RPSIT Rally</h1>
+                 <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="10">
+                 <button id="start-btn" class="primary-btn" disabled>
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"></path></svg>
+                     Start Game
+                 </button>
+            </div>
         </div>
 
         <div id="leaderboard-screen" class="screen hidden">
              <div class="top-bar">
                 <button id="back-home-btn" class="icon-button">←</button>
+                 <h2>Leaderboard</h2>
+                 <div></div> 
             </div>
             <div id="leaderboard-content">
-                <h2>Leaderboard</h2>
                 <ul id="leaderboard-list"></ul>
             </div>
         </div>
 
         <div id="game-screen" class="screen hidden">
             <div class="top-bar">
-                <button class="icon-button" id="close-game">✕</button>
+                <button class="icon-button" id="close-game">←</button>
                 <div class="score-box" id="hi-score-display">HI 000</div>
             </div>
             <div id="current-score-display" class="score-text">0</div>
-            <img id="flame" src="images/Gemini_Generated_Image_nyl78knyl78knyl7-removebg-preview.png" alt="RPSIT Logo">
+            
+            <img id="flame" src="sample.png" alt="RPSIT Logo">
             <div id="paddle"></div>
         </div>
         
         <div id="game-over-screen" class="screen hidden">
             <div id="flame-field"></div>
             <div class="top-bar">
-                <button class="icon-button" id="close-game-over">✕</button>
+                <div></div> 
                 <div class="score-box" id="final-hi-score-display">HI 000</div>
             </div>
             <div class="game-over-content">
@@ -368,13 +390,15 @@
             // DOM Elements
             const gameContainer = document.getElementById('game-container');
             const homeScreen = document.getElementById('home-screen');
-            const homeContentWrapper = document.getElementById('home-content-wrapper');
             const gameScreen = document.getElementById('game-screen');
             const gameOverScreen = document.getElementById('game-over-screen');
             const leaderboardScreen = document.getElementById('leaderboard-screen');
             
+            const startBtn = document.getElementById('start-btn');
+            const playerNameInput = document.getElementById('player-name-input');
             const leaderboardBtn = document.getElementById('leaderboard-btn');
             const backHomeBtn = document.getElementById('back-home-btn');
+            const homeBackBtn = document.getElementById('home-back-btn');
 
             const hiScoreDisplay = document.getElementById('hi-score-display');
             const homeHiScoreDisplay = document.getElementById('home-hi-score-display');
@@ -387,18 +411,17 @@
             const paddle = document.getElementById('paddle');
             const playAgainBtn = document.getElementById('play-again-btn');
             const goBackBtn = document.getElementById('go-back-btn');
-            const closeButtons = document.querySelectorAll('#close-game, #close-game-over');
+            const closeGameBtn = document.getElementById('close-game');
             const leaderboardList = document.getElementById('leaderboard-list');
 
             // Game State Variables
             let score = 0;
-            let highScore = parseInt(localStorage.getItem('flamePongHighScore')) || 0;
-            let leaderboard = JSON.parse(localStorage.getItem('flamePongLeaderboard')) || [];
+            let highScore = parseInt(localStorage.getItem('rallyHighScore')) || 0;
+            let leaderboard = JSON.parse(localStorage.getItem('rallyLeaderboard')) || [];
             let currentPlayerName = '';
             let flameX, flameY, flameVelocityX, flameVelocityY;
             let gameLoopId, isGameRunning = false;
             
-            // Image source for the falling logos (must match the main flame src)
             const decoFlameSrc = "sample.png"; 
 
             function showScreen(screenToShow) {
@@ -406,7 +429,6 @@
                 screenToShow.classList.remove('hidden');
             }
 
-            // Leaderboard Logic
             function updateLeaderboardDisplay() {
                 leaderboardList.innerHTML = '';
                 if (leaderboard.length === 0) {
@@ -428,11 +450,16 @@
                     leaderboard.push({ name: currentPlayerName, score: score });
                     leaderboard.sort((a, b) => b.score - a.score);
                     leaderboard = leaderboard.slice(0, 5);
-                    localStorage.setItem('flamePongLeaderboard', JSON.stringify(leaderboard));
+                    localStorage.setItem('rallyLeaderboard', JSON.stringify(leaderboard));
                 }
             }
             
             function initGame() {
+                currentPlayerName = playerNameInput.value.trim();
+                if (currentPlayerName === '') return;
+                
+                localStorage.setItem('rallyPlayerName', currentPlayerName);
+
                 score = 0;
                 isGameRunning = true;
                 const containerRect = gameContainer.getBoundingClientRect();
@@ -453,7 +480,7 @@
                 if (!isGameRunning) return;
                 flameX += flameVelocityX;
                 flameY += flameVelocityY;
-                // Use transform property for positioning
+                
                 flame.style.transform = `translate(${flameX}px, ${flameY}px)`;
                 checkCollisions();
                 gameLoopId = requestAnimationFrame(gameLoop);
@@ -497,7 +524,7 @@
                 cancelAnimationFrame(gameLoopId);
                 if (score > highScore) {
                     highScore = score;
-                    localStorage.setItem('flamePongHighScore', highScore);
+                    localStorage.setItem('rallyHighScore', highScore);
                     newHighScoreText.style.display = 'block';
                 }
                 saveScoreToLeaderboard();
@@ -517,8 +544,8 @@
                 const flameField = document.getElementById('flame-field');
                 flameField.innerHTML = '';
                 for (let i = 0; i < 15; i++) {
-                    const decoFlame = document.createElement('img'); // Changed to img
-                    decoFlame.src = decoFlameSrc; // Set src to sample.png
+                    const decoFlame = document.createElement('img'); 
+                    decoFlame.src = decoFlameSrc; 
                     decoFlame.alt = 'RPSIT Logo';
                     decoFlame.className = 'deco-flame';
                     decoFlame.style.left = `${Math.random() * 100}%`;
@@ -537,51 +564,13 @@
             }
 
             function setupHomeScreen() {
-                const savedName = localStorage.getItem('flamePongPlayerName');
-                homeContentWrapper.innerHTML = ''; // Clear previous content
-
+                const savedName = localStorage.getItem('rallyPlayerName');
                 if (savedName) {
-                    // --- Returning Player View ---
-                    currentPlayerName = savedName;
-                    const welcomeHTML = `
-                        <h1>Welcome back, <span id="welcome-name">${savedName}</span></h1>
-                        <button id="start-btn-returning" class="primary-btn">
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"></path></svg>
-                             Start Game
-                        </button>
-                        <button id="change-name-btn">Change Name</button>
-                    `;
-                    homeContentWrapper.innerHTML = welcomeHTML;
-                    document.getElementById('start-btn-returning').addEventListener('click', initGame);
-                    document.getElementById('change-name-btn').addEventListener('click', () => {
-                        localStorage.removeItem('flamePongPlayerName');
-                        setupHomeScreen(); // Redraw home screen for name input
-                    });
-
+                    playerNameInput.value = savedName;
+                    startBtn.disabled = false;
                 } else {
-                    // --- New Player View ---
-                    const namePromptHTML = `
-                        <h1>Flame Pong</h1>
-                        <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="10">
-                        <button id="start-btn" class="primary-btn" disabled>
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"></path></svg>
-                             Start Game
-                        </button>
-                    `;
-                    homeContentWrapper.innerHTML = namePromptHTML;
-                    const playerNameInput = document.getElementById('player-name-input');
-                    const startBtn = document.getElementById('start-btn');
-                    
-                    playerNameInput.addEventListener('input', () => {
-                        startBtn.disabled = playerNameInput.value.trim() === '';
-                    });
-                    startBtn.addEventListener('click', () => {
-                        const newName = playerNameInput.value.trim();
-                        if (newName) {
-                            localStorage.setItem('flamePongPlayerName', newName);
-                            initGame();
-                        }
-                    });
+                    playerNameInput.value = '';
+                    startBtn.disabled = true;
                 }
             }
 
@@ -590,13 +579,24 @@
                 updateLeaderboardDisplay();
                 showScreen(leaderboardScreen);
             });
+            
+            homeBackBtn.addEventListener('click', () => {
+                history.back(); // Standard browser back functionality
+            });
+
             backHomeBtn.addEventListener('click', goHome);
             gameContainer.addEventListener('mousemove', handleMouseMove);
             gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+            
+            playerNameInput.addEventListener('input', () => {
+                startBtn.disabled = playerNameInput.value.trim() === '';
+            });
+
+            startBtn.addEventListener('click', initGame);
             playAgainBtn.addEventListener('click', initGame);
             goBackBtn.addEventListener('click', goHome);
-            closeButtons.forEach(btn => btn.addEventListener('click', goHome));
-
+            closeGameBtn.addEventListener('click', goHome);
+            
             // Initial setup
             goHome();
         });
