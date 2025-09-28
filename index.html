@@ -59,7 +59,7 @@
             padding: 20px;
         }
         
-        #game-screen, #leaderboard-screen {
+        #game-screen {
             background: var(--yellow-bg);
         }
 
@@ -101,7 +101,7 @@
             place-items: center;
         }
         
-        #game-screen .icon-button, #game-over-screen .icon-button, #leaderboard-screen .icon-button {
+        #game-screen .icon-button, #game-over-screen .icon-button {
              color: white;
         }
 
@@ -271,42 +271,6 @@
             margin-top: 15px;
         }
         
-        #leaderboard-content {
-            flex-grow: 1;
-            width: 100%;
-            max-width: 320px;
-            margin: 0 auto;
-            padding: 0 20px 20px;
-            box-sizing: border-box;
-        }
-        #leaderboard-content h2 {
-            font-size: clamp(24px, 7vw, 30px);
-            text-align: center;
-            color: rgba(0,0,0,0.6);
-        }
-        #leaderboard-list {
-            list-style: none;
-            padding: 0;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            padding: 10px;
-        }
-        #leaderboard-list li {
-            font-size: clamp(16px, 4.5vw, 18px);
-            padding: 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-            color: rgba(0,0,0,0.7);
-            font-weight: 500;
-        }
-        #leaderboard-list li:last-child {
-            border-bottom: none;
-        }
-        #leaderboard-list li span:first-child {
-            font-weight: 700;
-        }
-        
         h1 {
             color: var(--dark-yellow-accent);
             font-size: clamp(36px, 12vw, 48px);
@@ -328,7 +292,6 @@
             <div class="top-bar">
                 <button id="home-back-btn" class="icon-button">←</button>
                 <div class="top-right-group">
-                    <button id="leaderboard-btn" class="icon-button">🏆</button>
                     <div class="score-box" id="home-hi-score-display">HI 000</div>
                 </div>
             </div>
@@ -339,17 +302,6 @@
                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"></path></svg>
                      Start Game
                  </button>
-            </div>
-        </div>
-
-        <div id="leaderboard-screen" class="screen hidden">
-             <div class="top-bar">
-                <button id="back-home-btn" class="icon-button">←</button>
-                 <h2>Leaderboard</h2>
-                 <div></div> 
-            </div>
-            <div id="leaderboard-content">
-                <ul id="leaderboard-list"></ul>
             </div>
         </div>
 
@@ -392,12 +344,9 @@
             const homeScreen = document.getElementById('home-screen');
             const gameScreen = document.getElementById('game-screen');
             const gameOverScreen = document.getElementById('game-over-screen');
-            const leaderboardScreen = document.getElementById('leaderboard-screen');
             
             const startBtn = document.getElementById('start-btn');
             const playerNameInput = document.getElementById('player-name-input');
-            const leaderboardBtn = document.getElementById('leaderboard-btn');
-            const backHomeBtn = document.getElementById('back-home-btn');
             const homeBackBtn = document.getElementById('home-back-btn');
 
             const hiScoreDisplay = document.getElementById('hi-score-display');
@@ -412,12 +361,10 @@
             const playAgainBtn = document.getElementById('play-again-btn');
             const goBackBtn = document.getElementById('go-back-btn');
             const closeGameBtn = document.getElementById('close-game');
-            const leaderboardList = document.getElementById('leaderboard-list');
 
             // Game State Variables
             let score = 0;
             let highScore = parseInt(localStorage.getItem('rallyHighScore')) || 0;
-            let leaderboard = JSON.parse(localStorage.getItem('rallyLeaderboard')) || [];
             let currentPlayerName = '';
             let flameX, flameY, flameVelocityX, flameVelocityY;
             let gameLoopId, isGameRunning = false;
@@ -425,33 +372,8 @@
             const decoFlameSrc = "sample.png"; 
 
             function showScreen(screenToShow) {
-                [homeScreen, gameScreen, gameOverScreen, leaderboardScreen].forEach(screen => screen.classList.add('hidden'));
+                [homeScreen, gameScreen, gameOverScreen].forEach(screen => screen.classList.add('hidden'));
                 screenToShow.classList.remove('hidden');
-            }
-
-            function updateLeaderboardDisplay() {
-                leaderboardList.innerHTML = '';
-                if (leaderboard.length === 0) {
-                    const li = document.createElement('li');
-                    li.textContent = 'Play a game to see your score!';
-                    li.style.textAlign = 'center';
-                    leaderboardList.appendChild(li);
-                } else {
-                    leaderboard.forEach((entry) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<span>${entry.name}</span><span>${entry.score}</span>`;
-                        leaderboardList.appendChild(li);
-                    });
-                }
-            }
-
-            function saveScoreToLeaderboard() {
-                if (score > 0) {
-                    leaderboard.push({ name: currentPlayerName, score: score });
-                    leaderboard.sort((a, b) => b.score - a.score);
-                    leaderboard = leaderboard.slice(0, 5);
-                    localStorage.setItem('rallyLeaderboard', JSON.stringify(leaderboard));
-                }
             }
             
             function initGame() {
@@ -527,7 +449,6 @@
                     localStorage.setItem('rallyHighScore', highScore);
                     newHighScoreText.style.display = 'block';
                 }
-                saveScoreToLeaderboard();
                 updateScoreDisplays();
                 finalScoreDisplay.textContent = `${score} Hits`;
                 generateFlameField();
@@ -575,16 +496,10 @@
             }
 
             // Event Listeners
-            leaderboardBtn.addEventListener('click', () => {
-                updateLeaderboardDisplay();
-                showScreen(leaderboardScreen);
-            });
-            
             homeBackBtn.addEventListener('click', () => {
                 history.back(); // Standard browser back functionality
             });
 
-            backHomeBtn.addEventListener('click', goHome);
             gameContainer.addEventListener('mousemove', handleMouseMove);
             gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
             
