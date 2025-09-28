@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flame Pong</title>
+    <style>
+        /* Basic Setup */
+        :root {
+            --yellow-gradient: linear-gradient(180deg, #ffee58, #ffc107);
+            --purple-gradient: linear-gradient(180deg, #7b1fa2, #4a148c);
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #1c1c1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Game Container */
+        #game-container {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            max-height: 932px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: var(--yellow-gradient);
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+            box-sizing: border-box;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #home-screen {
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        #game-screen, #leaderboard-screen {
+            background: var(--yellow-gradient);
+        }
+
+        #game-over-screen {
+            background: var(--purple-gradient);
+        }
+
+        /* UI Elements */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: 300;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+        }
+
+        #player-name-input {
+            width: 80%;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 12px;
+            border: 2px solid rgba(0,0,0,0.1);
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            outline: none;
+        }
+        #player-name-input:focus {
+            border-color: #000;
+        }
+
+        .score-box {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: clamp(16px, 4vw, 18px);
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(120px, 40vw, 200px);
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.1);
+            z-index: 5;
+        }
+        
+        #home-content-wrapper {
+            text-align: center; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 20px;
+        }
+        
+        #change-name-btn {
+            background: none;
+            border: none;
+            color: rgba(0,0,0,0.4);
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+        }
+
+        #flame { /* This now targets the img element */
+            position: absolute;
+            width: clamp(40px, 10vw, 50px); /* Adjust size for the image */
+            height: auto; /* Maintain aspect ratio */
+            filter: drop-shadow(0 0 10px #fffffeb3); /* Use drop-shadow for image */
+            will-change: transform;
+            z-index: 6;
+            transform-origin: center center; /* Ensure rotation is from center */
+        }
+
+        #paddle {
+            position: absolute;
+            bottom: 50px;
+            width: clamp(80px, 25vw, 100px);
+            height: clamp(25px, 7vw, 30px);
+            background-color: #000;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 7;
+        }
+
+        #game-over-screen .game-over-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        #final-score-display {
+            font-size: clamp(40px, 12vw, 60px);
+            font-weight: 900;
+            margin: 0;
+        }
+
+        #new-highscore-text {
+            font-size: clamp(16px, 5vw, 20px);
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 5px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        #flame-field {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .deco-flame { /* This now targets the img elements for the rain */
+            position: absolute;
+            width: clamp(20px, 6vw, 30px); /* Smaller size for raining logos */
+            height: auto;
+            filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.5));
+            animation: flameRain 3s linear infinite;
+        }
+
+        @keyframes flameRain {
+            0% { transform: translateY(-10vh); opacity: 0.8; }
+            100% { transform: translateY(110vh); opacity: 0.8; }
+        }
+
+        .button-group {
+            position: absolute;
+            bottom: 60px;
+            left: 30px;
+            right: 30px;
+        }
+
+        .primary-btn, .secondary-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            font-size: clamp(16px, 5vw, 18px);
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .primary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .primary-btn {
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .secondary-btn {
+            background: none;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 15px;
+        }
+        
+        /* Leaderboard Screen */
+        #leaderboard-content {
+            flex-grow: 1;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            padding: 0 20px 20px;
+            box-sizing: border-box;
+        }
+        #leaderboard-content h2 {
+            font-size: clamp(24px, 7vw, 30px);
+            text-align: center;
+            color: rgba(0,0,0,0.6);
+        }
+        #leaderboard-list {
+            list-style: none;
+            padding: 0;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+        }
+        #leaderboard-list li {
+            font-size: clamp(16px, 4.5vw, 18px);
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            color: rgba(0,0,0,0.7);
+            font-weight: 500;
+        }
+        #leaderboard-list li:last-child {
+            border-bottom: none;
+        }
+        #leaderboard-list li span:first-child {
+            font-weight: 700;
+        }
+        
+        h1 {
+            color: rgba(0,0,0,0.6);
+            font-size: clamp(36px, 12vw, 48px);
+            margin: 0;
+        }
+        #welcome-name {
+            display: block;
+            font-size: clamp(24px, 8vw, 32px);
+            margin-top: 10px;
+            color: #000;
+        }
+
+        /* Full screen on smaller devices */
+        @media (max-height: 932px) {
+            #game-container {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+
+        <div id="home-screen" class="screen">
+            <div class="top-bar">
+                <div class="score-box" id="home-hi-score-display">HI 000</div>
+                <button id="leaderboard-btn" class="icon-button">🏆</button>
+            </div>
+            <div id="home-content-wrapper">
+                </div>
+        </div>
+
+        <div id="leaderboard-screen" class="screen hidden">
+             <div class="top-bar">
+                <button id="back-home-btn" class="icon-button">←</button>
+            </div>
+            <div id="leaderboard-content">
+                <h2>Leaderboard</h2>
+                <ul id="leaderboard-list"></ul>
+            </div>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <div class="top-bar">
+                <button class="icon-button" id="close-game">✕</button>
+                <div class="score-box" id="hi-score-display">HI 000</div>
+            </div>
+            <div id="current-score-display" class="score-text">0</div>
+            <img id="flame" src="images/Gemini_Generated_Image_nyl78knyl78knyl7-removebg-preview.png" alt="RPSIT Logo">
+            <div id="paddle"></div>
+        </div>
+        
+        <div id="game-over-screen" class="screen hidden">
+            <div id="flame-field"></div>
+            <div class="top-bar">
+                <button class="icon-button" id="close-game-over">✕</button>
+                <div class="score-box" id="final-hi-score-display">HI 000</div>
+            </div>
+            <div class="game-over-content">
+                <h1 id="final-score-display">0 Hits</h1>
+                <p id="new-highscore-text">New high score!</p>
+                <div class="button-group">
+                    <button id="play-again-btn" class="primary-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                            <path d="M8 5v14l11-7z"></path>
+                        </svg>
+                        Play again
+                    </button>
+                    <button id="go-back-btn" class="secondary-btn">Go back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const gameContainer = document.getElementById('game-container');
+            const homeScreen = document.getElementById('home-screen');
+            const homeContentWrapper = document.getElementById('home-content-wrapper');
+            const gameScreen = document.getElementById('game-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const leaderboardScreen = document.getElementById('leaderboard-screen');
+            
+            const leaderboardBtn = document.getElementById('leaderboard-btn');
+            const backHomeBtn = document.getElementById('back-home-btn');
+
+            const hiScoreDisplay = document.getElementById('hi-score-display');
+            const homeHiScoreDisplay = document.getElementById('home-hi-score-display');
+            const currentScoreDisplay = document.getElementById('current-score-display');
+            const finalHiScoreDisplay = document.getElementById('final-hi-score-display');
+            const finalScoreDisplay = document.getElementById('final-score-display');
+            const newHighScoreText = document.getElementById('new-highscore-text');
+            
+            const flame = document.getElementById('flame');
+            const paddle = document.getElementById('paddle');
+            const playAgainBtn = document.getElementById('play-again-btn');
+            const goBackBtn = document.getElementById('go-back-btn');
+            const closeButtons = document.querySelectorAll('#close-game, #close-game-over');
+            const leaderboardList = document.getElementById('leaderboard-list');
+
+            // Game State Variables
+            let score = 0;
+            let highScore = parseInt(localStorage.getItem('flamePongHighScore')) || 0;
+            let leaderboard = JSON.parse(localStorage.getItem('flamePongLeaderboard')) || [];
+            let currentPlayerName = '';
+            let flameX, flameY, flameVelocityX, flameVelocityY;
+            let gameLoopId, isGameRunning = false;
+            
+            // Image source for the falling logos (must match the main flame src)
+            const decoFlameSrc = "sample.png"; 
+
+            function showScreen(screenToShow) {
+                [homeScreen, gameScreen, gameOverScreen, leaderboardScreen].forEach(screen => screen.classList.add('hidden'));
+                screenToShow.classList.remove('hidden');
+            }
+
+            // Leaderboard Logic
+            function updateLeaderboardDisplay() {
+                leaderboardList.innerHTML = '';
+                if (leaderboard.length === 0) {
+                    const li = document.createElement('li');
+                    li.textContent = 'Play a game to see your score!';
+                    li.style.textAlign = 'center';
+                    leaderboardList.appendChild(li);
+                } else {
+                    leaderboard.forEach((entry) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${entry.name}</span><span>${entry.score}</span>`;
+                        leaderboardList.appendChild(li);
+                    });
+                }
+            }
+
+            function saveScoreToLeaderboard() {
+                if (score > 0) {
+                    leaderboard.push({ name: currentPlayerName, score: score });
+                    leaderboard.sort((a, b) => b.score - a.score);
+                    leaderboard = leaderboard.slice(0, 5);
+                    localStorage.setItem('flamePongLeaderboard', JSON.stringify(leaderboard));
+                }
+            }
+            
+            function initGame() {
+                score = 0;
+                isGameRunning = true;
+                const containerRect = gameContainer.getBoundingClientRect();
+                flameX = containerRect.width / 2;
+                flameY = containerRect.height / 3;
+                flameVelocityX = containerRect.width * 0.01;
+                flameVelocityY = containerRect.width * 0.01;
+                paddle.style.left = `${(containerRect.width - paddle.offsetWidth) / 2}px`;
+                updateScoreDisplays();
+                newHighScoreText.style.display = 'none';
+                showScreen(gameScreen);
+                
+                if (gameLoopId) cancelAnimationFrame(gameLoopId);
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+
+            function gameLoop() {
+                if (!isGameRunning) return;
+                flameX += flameVelocityX;
+                flameY += flameVelocityY;
+                // Use transform property for positioning
+                flame.style.transform = `translate(${flameX}px, ${flameY}px)`;
+                checkCollisions();
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+
+            function checkCollisions() {
+                const containerRect = gameContainer.getBoundingClientRect();
+                const flameRect = flame.getBoundingClientRect();
+                const paddleRect = paddle.getBoundingClientRect();
+
+                if (flameRect.left <= containerRect.left || flameRect.right >= containerRect.right) flameVelocityX *= -1;
+                if (flameRect.top <= containerRect.top) flameVelocityY *= -1;
+                
+                if (flameRect.bottom >= paddleRect.top && flameRect.top < paddleRect.bottom && flameRect.right > paddleRect.left && flameRect.left < paddleRect.right && flameVelocityY > 0) {
+                    flameVelocityY *= -1;
+                    score++;
+                    updateScoreDisplays();
+                    if (score > 0 && score % 5 === 0) {
+                        flameVelocityX *= 1.1;
+                        flameVelocityY *= 1.1;
+                    }
+                }
+                
+                if (flameRect.top >= containerRect.bottom) endGame();
+            }
+            
+            function handleMouseMove(event) { if (isGameRunning) movePaddle(event.clientX); }
+            function handleTouchMove(event) { if (isGameRunning) { event.preventDefault(); movePaddle(event.touches[0].clientX); } }
+            
+            function movePaddle(clientX) {
+                const containerRect = gameContainer.getBoundingClientRect();
+                let clientXRelative = clientX - containerRect.left;
+                let paddleX = clientXRelative - (paddle.offsetWidth / 2);
+                if (paddleX < 0) paddleX = 0;
+                if (paddleX > containerRect.width - paddle.offsetWidth) paddleX = containerRect.width - paddle.offsetWidth;
+                paddle.style.left = `${paddleX}px`;
+            }
+
+            function endGame() {
+                isGameRunning = false;
+                cancelAnimationFrame(gameLoopId);
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('flamePongHighScore', highScore);
+                    newHighScoreText.style.display = 'block';
+                }
+                saveScoreToLeaderboard();
+                updateScoreDisplays();
+                finalScoreDisplay.textContent = `${score} Hits`;
+                generateFlameField();
+                showScreen(gameOverScreen);
+            }
+
+            function updateScoreDisplays() {
+                const formattedHiScore = `HI ${String(highScore).padStart(3, '0')}`;
+                [hiScoreDisplay, homeHiScoreDisplay, finalHiScoreDisplay].forEach(el => el.textContent = formattedHiScore);
+                currentScoreDisplay.textContent = score;
+            }
+
+            function generateFlameField() {
+                const flameField = document.getElementById('flame-field');
+                flameField.innerHTML = '';
+                for (let i = 0; i < 15; i++) {
+                    const decoFlame = document.createElement('img'); // Changed to img
+                    decoFlame.src = decoFlameSrc; // Set src to sample.png
+                    decoFlame.alt = 'RPSIT Logo';
+                    decoFlame.className = 'deco-flame';
+                    decoFlame.style.left = `${Math.random() * 100}%`;
+                    decoFlame.style.animationDelay = `${Math.random() * 3}s`;
+                    decoFlame.style.animationDuration = `${Math.random() * 2 + 2}s`;
+                    flameField.appendChild(decoFlame);
+                }
+            }
+            
+            function goHome() {
+                isGameRunning = false;
+                if(gameLoopId) cancelAnimationFrame(gameLoopId);
+                updateScoreDisplays();
+                setupHomeScreen();
+                showScreen(homeScreen);
+            }
+
+            function setupHomeScreen() {
+                const savedName = localStorage.getItem('flamePongPlayerName');
+                homeContentWrapper.innerHTML = ''; // Clear previous content
+
+                if (savedName) {
+                    // --- Returning Player View ---
+                    currentPlayerName = savedName;
+                    const welcomeHTML = `
+                        <h1>Welcome back, <span id="welcome-name">${savedName}</span></h1>
+                        <button id="start-btn-returning" class="primary-btn">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"></path></svg>
+                             Start Game
+                        </button>
+                        <button id="change-name-btn">Change Name</button>
+                    `;
+                    homeContentWrapper.innerHTML = welcomeHTML;
+                    document.getElementById('start-btn-returning').addEventListener('click', initGame);
+                    document.getElementById('change-name-btn').addEventListener('click', () => {
+                        localStorage.removeItem('flamePongPlayerName');
+                        setupHomeScreen(); // Redraw home screen for name input
+                    });
+
+                } else {
+                    // --- New Player View ---
+                    const namePromptHTML = `
+                        <h1>Flame Pong</h1>
+                        <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="10">
+                        <button id="start-btn" class="primary-btn" disabled>
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"></path></svg>
+                             Start Game
+                        </button>
+                    `;
+                    homeContentWrapper.innerHTML = namePromptHTML;
+                    const playerNameInput = document.getElementById('player-name-input');
+                    const startBtn = document.getElementById('start-btn');
+                    
+                    playerNameInput.addEventListener('input', () => {
+                        startBtn.disabled = playerNameInput.value.trim() === '';
+                    });
+                    startBtn.addEventListener('click', () => {
+                        const newName = playerNameInput.value.trim();
+                        if (newName) {
+                            localStorage.setItem('flamePongPlayerName', newName);
+                            initGame();
+                        }
+                    });
+                }
+            }
+
+            // Event Listeners
+            leaderboardBtn.addEventListener('click', () => {
+                updateLeaderboardDisplay();
+                showScreen(leaderboardScreen);
+            });
+            backHomeBtn.addEventListener('click', goHome);
+            gameContainer.addEventListener('mousemove', handleMouseMove);
+            gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+            playAgainBtn.addEventListener('click', initGame);
+            goBackBtn.addEventListener('click', goHome);
+            closeButtons.forEach(btn => btn.addEventListener('click', goHome));
+
+            // Initial setup
+            goHome();
+        });
+    </script>
+</body>
+</html>
